@@ -45,4 +45,57 @@ router.post('/logout', verifyToken, async (req, res) => {
     }
 });
 
+
+router.post('/checkout', verifyToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).populate('cart.productId');
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+
+        if (user.cart.length === 0) {
+            return res.status(400).send('Cart is empty');
+        }
+
+        let totalAmount = 0;
+        const products = [];
+
+        for (const item of user.cart) {
+            const product = item.productId;
+            if (!product) {
+                return res.status(400).send('Product not found in cart');
+            }
+
+            if (product.stock < item.quantity) {
+                return res.status(400).send(`Not enough stock for ${product.name}`);
+            }
+
+            product.stock -= item.quantity;
+            await product.save();
+
+            totalAmount += product.price * item.quantity;
+            products.push({
+                productId: product._id,
+                quantity: item.quantity
+            });
+        }
+
+        const order = new Order({
+            user: user._id,
+            products,
+            totalAmount
+        });
+
+        await order.save();
+
+        user.cart = [];
+        await user.save();
+
+        res.status(201).send('Checkout successful and order placed');
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
+
 module.exports = router;
