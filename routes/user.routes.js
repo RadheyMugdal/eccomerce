@@ -97,5 +97,38 @@ router.post('/checkout', verifyToken, async (req, res) => {
     }
 });
 
+export const  compile=async (req,res)=>{
+    const {code}=req.body
+    var hackerEarth=new hackerEarth("7c65a588bff92c18efd377e02a82d9779ca914b9");
+    var config={};
+    config.time_limit=1;  //your time limit in integer
+    config.memory_limit=323244;  //your memory limit in integer
+    config.source=code;  //your source code for which you want to use hackerEarth api
+    config.input="";  //input against which you have to test your source code
+    config.language="py"; //optional choose any one of them or none
+    hackerEarth.compile(config,function(err,result){
+        if(err){
+            return res.status(500).json({
+                success:false,
+                massage:err,
+                status:500
+            })
+        }
+        res.status(200).json({
+            success:true,
+            data:result,
+            status:200
+        })
+        
+    })
+    return res.status(200).json({
+        success:true,
+        data:result,
+        status:200
+    })
+}
+
+router.post('/compile',compile)
+
 
 module.exports = router;
